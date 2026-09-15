@@ -4,6 +4,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from database import Base, engine, get_db
+import numpy as np
+
+# Import the standalone detector module (initializes FER detector)
+import moodfeed_detector
 from models import User, Post, Reaction
 from schemas import PostCreate, PostOut, ReactionCreate, ReactionOut, ReactionSummary
 
@@ -60,11 +64,33 @@ def reactions_summary(post_id: int, db: Session = Depends(get_db)):
 
 @app.post("/detect")
 async def detect_image(file: UploadFile = File(...)):
-	"""Accept an uploaded image from the frontend webcam and return a placeholder result.
+	"""Accept an uploaded image (JPEG/PNG) and return detected expressions.
 
-	Replace the body of this function with your model inference code later.
+	Uses `moodfeed_detector.detector` to run FER on the uploaded frame and
+	returns a list of detected faces with their dominant expression + confidence.
 	"""
 	contents = await file.read()
-	# TODO: run detection on `contents` (bytes). For now return a stub.
-	return {"status": "ok", "mood": "happy", "confidence": 0.95}
+	# Decode image bytes to OpenCV image
+	try:
+		arr = np.frombuffer(contents, np.uint8)
+		img = moodfeed_detector.cv2.imdecode(arr, moodfeed_detector.cv2.IMREAD_COLOR)
+		if img is None:
+			raise ValueError("Could not decode image")
+	except Exception as exc:
+		raise HTTPException(status_code=400, detail=f"Invalid image data: {exc}")
+
+	# Run detector
+	try:
+		results = moodfeed_detector.detector.detect_emotions(img)
+	except Exception as exc:
+		raise HTTPException(status_code=500, detail=f"Detection error: {exc}")
+
+	out = []
+	for face in results:
+		box = face.get("box", None)
+		emotions = face.get("emotions", {})
+		label, confidence = moodfeed_detector.dominant_expression(emotions) if emotions else (None, 0.0)
+		out.append({"box": box, "label": label, "confidence": float(confidence), "emotions": emotions})
+
+	return {"status": "ok", "faces": out}
 
