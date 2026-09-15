@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -11,6 +12,15 @@ app = FastAPI()
 
 # Create tables on first run; comment out after DB initialized.
 Base.metadata.create_all(bind=engine)
+
+# Allow requests from the frontend dev server
+app.add_middleware(
+	CORSMiddleware,
+	allow_origins=["http://localhost:5173"],
+	allow_credentials=True,
+	allow_methods=["*"],
+	allow_headers=["*"],
+)
 
 
 @app.post("/posts", response_model=PostOut)
@@ -46,4 +56,15 @@ def reactions_summary(post_id: int, db: Session = Depends(get_db)):
 		.all()
 	)
 	return [{"emoji": r[0], "count": r[1]} for r in rows]
+
+
+@app.post("/detect")
+async def detect_image(file: UploadFile = File(...)):
+	"""Accept an uploaded image from the frontend webcam and return a placeholder result.
+
+	Replace the body of this function with your model inference code later.
+	"""
+	contents = await file.read()
+	# TODO: run detection on `contents` (bytes). For now return a stub.
+	return {"status": "ok", "mood": "happy", "confidence": 0.95}
 
