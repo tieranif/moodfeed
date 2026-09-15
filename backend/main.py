@@ -88,9 +88,10 @@ async def detect_image(file: UploadFile = File(...)):
 	except Exception as exc:
 		raise HTTPException(status_code=400, detail=f"Invalid image data: {exc}")
 
-	# Run detector
+	# Run detector (initialize lazily)
 	try:
-		results = moodfeed_detector.detector.detect_emotions(img)
+		det = moodfeed_detector.get_detector()
+		results = det.detect_emotions(img)
 	except Exception as exc:
 		raise HTTPException(status_code=500, detail=f"Detection error: {exc}")
 

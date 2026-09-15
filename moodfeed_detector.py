@@ -35,7 +35,18 @@ import time
 
 # mtcnn=True uses a more accurate (but slower) face detector.
 # Set to False for faster/cheaper detection once you're just testing logic.
-detector = FER(mtcnn=True)
+detector = None
+
+
+def get_detector(mtcnn: bool = True):
+    """Return a singleton FER detector, creating it on first call.
+
+    This avoids heavy TensorFlow model initialization at import time.
+    """
+    global detector
+    if detector is None:
+        detector = FER(mtcnn=mtcnn)
+    return detector
 
 EXPRESSIONS = ["angry", "disgust", "fear", "happy", "sad", "surprise", "neutral"]
 
@@ -60,7 +71,9 @@ def main():
         if not ret:
             break
 
-        results = detector.detect_emotions(frame)
+        # use lazy detector for standalone run too
+        det = get_detector()
+        results = det.detect_emotions(frame)
 
         for face in results:
             (x, y, w, h) = face["box"]
