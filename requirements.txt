@@ -7,3 +7,4 @@ pydantic
 fer
 opencv-python
 tensorflow
+python-multipart
