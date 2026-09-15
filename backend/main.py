@@ -36,6 +36,18 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+def warm_detector():
+	"""Initialize the FER detector on server startup to avoid first-request latency."""
+	try:
+		import moodfeed_detector as _md
+		_md.get_detector()
+		print("Detector warmed on startup")
+	except Exception as exc:
+		# Print so uvicorn logs capture the failure but allow the server to start
+		print("Warning: detector warm failed:", exc)
+
+
 @app.post("/posts", response_model=PostOut)
 def create_post(payload: PostCreate, db: Session = Depends(get_db)):
 	post = Post(title=payload.title, content=payload.content, author_id=payload.author_id)
