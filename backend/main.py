@@ -12,13 +12,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from database import Base, engine, get_db
+from backend.database import Base, engine, get_db
 import numpy as np
 
 # Import the standalone detector module (initializes FER detector)
 import moodfeed_detector
-from models import User, Post, Reaction
-from schemas import PostCreate, PostOut, ReactionCreate, ReactionOut, ReactionSummary
+from backend.models import User, Post, Reaction
+from backend.schemas import PostCreate, PostOut, ReactionCreate, ReactionOut, ReactionSummary
 
 
 app = FastAPI()
